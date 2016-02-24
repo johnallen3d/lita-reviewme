@@ -42,6 +42,13 @@ config.handlers.reviewme.github_access_token = ENV["GITHUB_ACCESS_TOKEN"]
 >
 > **Nerdbot** added kyfast to reviews
 
+### Include chat handle when adding reviewer
+When adding a reviewer you may supply the reviewers chat handle (often different from GitHub handle) by appending a `:` and the users chat handle. If a reviewers chat handle is supplied they will receive a private message when they have been assigned to review a pull request.
+
+> **Jay H.** Nerdbot: add johnallen3d:john.allen to reviews
+>
+> **Nerdbot** added johnallen3d (@john.allen) to reviews
+
 ### Remove a name from the review rotation
 
 > **Jay H.** Nerdbot: remove kyfast from reviews

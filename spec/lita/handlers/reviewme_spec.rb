@@ -22,13 +22,30 @@ describe Lita::Handlers::Reviewme, lita_handler: true do
 
       expect(reply).to eq("added iamvery to reviews")
     end
+
+    it "accepts a chat handle if provided" do
+      send_command("add johnallen3d:john.allen to reviews")
+
+      expect(reply).to eq("added johnallen3d (@john.allen) to reviews")
+    end
   end
 
   describe "#remove_reviewer" do
+    before do
+      send_command("add iamvery to reviews")
+      send_command("add johnallen3d:john.allen to reviews")
+    end
+
     it "removes a name from the list" do
       send_command("remove iamvery from reviews")
 
       expect(reply).to eq("removed iamvery from reviews")
+    end
+
+    it "removes a name when we have chat handle" do
+      send_command("remove johnallen3d from reviews")
+
+      expect(reply).to eq("removed johnallen3d from reviews")
     end
   end
 
@@ -55,6 +72,7 @@ describe Lita::Handlers::Reviewme, lita_handler: true do
   describe "#comment_on_github" do
     let(:repo) { "gh_user/repo" }
     let(:id) { "123" }
+    let(:user) { OpenStruct.new({ id: 'abc' }) }
     let(:pr) do
       OpenStruct.new({ user: OpenStruct.new({ login: "pr-owner" }) })
     end
@@ -73,6 +91,16 @@ describe Lita::Handlers::Reviewme, lita_handler: true do
       send_command("review https://github.com/#{repo}/pull/#{id}")
 
       expect(reply).to eq("iamvery should be on it...")
+    end
+
+    it "messages the reviewer in chat if handle is present" do
+      allow_any_instance_of(Octokit::Client).to receive(:add_comment)
+      allow(Lita::User).to receive(:find_by_mention_name).and_return(user)
+
+      expect_any_instance_of(Lita::Robot).to receive(:send_message)
+
+      send_command("add johnallen3d:john.allen to reviews")
+      send_command("review https://github.com/#{repo}/pull/#{id}")
     end
 
     it "skips assigning to the GitHub PR owner" do
