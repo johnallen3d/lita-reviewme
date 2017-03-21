@@ -37,14 +37,17 @@ module Lita
       def assign_and_or_comment(reviewer)
         request_review(reviewer) if github_request_review
         add_comment(reviewer) if github_comment
-      rescue Octokit::Error
+      rescue Octokit::Error => e
+        puts e
         raise CannotPostComment
       end
 
       private
 
       def request_review(reviewer)
-        client.request_pull_request_review(repo, pr_id, [reviewer])
+        options = { accept: 'application/vnd.github.black-cat-preview' }
+
+        client.request_pull_request_review(repo, pr_id, [reviewer], options)
       end
 
       def add_comment(reviewer)
