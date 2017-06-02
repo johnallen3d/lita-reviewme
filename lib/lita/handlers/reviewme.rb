@@ -90,15 +90,16 @@ module Lita
 
       def review_on_github(response, room: get_room(response))
         github = Lita::Reviewme::Github.new(config, response.match_data[:repo], response.match_data[:id])
-        reviewer = next_reviewer(room, github.owner)
 
-        github.assign_and_or_comment(reviewer)
-        response.reply("#{reviewer} should be on it...")
-      rescue Lita::Reviewme::NoReviewer
-        response.reply('Sorry, no reviewers found')
-      rescue Lita::Reviewme::UnknownOwner
+        if reviewer = next_reviewer(room, github.owner)
+          github.assign(reviewer)
+          response.reply("#{reviewer} should be on it...")
+        else
+          response.reply('Sorry, no reviewers found')
+        end
+      rescue Lita::Reviewme::Github::UnknownOwner
         response.reply("Unable to check who issued the pull request. Sorry if you end up being assigned your own PR!")
-      rescue Lita::Reviewme::CannotPostComment
+      rescue Lita::Reviewme::Github::CannotPostComment
         url = response.match_data[:url]
         response.reply("I couldn't post a comment or request a reviewer. (Are the permissions right?) #{chat_mention(reviewer, url)}")
       end
@@ -112,10 +113,10 @@ module Lita
       private
 
       def next_reviewer(room, owner = nil)
-        raise Lita::Reviewme::NoReviewer unless reviewer = ns_redis(room.id).rpoplpush(REDIS_LIST, REDIS_LIST)
+        return unless (reviewer = ns_redis(room.id).rpoplpush(REDIS_LIST, REDIS_LIST))
 
         if reviewer == owner
-          raise Lita::Reviewme::NoReviewer if ns_redis(room.id).llen(REDIS_LIST) == 1
+          return if ns_redis(room.id).llen(REDIS_LIST) == 1
 
           reviewer = next_reviewer(room, owner)
         end
